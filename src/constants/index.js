@@ -1,0 +1,374 @@
+/**
+ * constants/index.js
+ * -----------------------------------------------------------------------
+ * Static reference data for ProspectAI: dropdown options, status color
+ * tokens, and the two pre-loaded campaign prospect lists.
+ *
+ * NOTE ON RECONSTRUCTED DATA: the source this was refactored from was
+ * extracted from a PDF export of a code screenshot, and several literal
+ * field values (emails, phones, revenue figures, `pitch` copy) were cut
+ * off by the PDF's column wrapping. Company names, contact names, and
+ * titles that were visible are preserved exactly. Fields that were
+ * truncated have been filled with realistic Chatham-Kent / Windsor-Essex
+ * / Sarnia-Lambton placeholder values in the same style the app's own
+ * AI prompt generates (519/226 area codes, .ca domains, CAD revenue) —
+ * replace them with your real prospect data before shipping.
+ */
+
+export const INDUSTRIES = [
+  "Agriculture & Farming",
+  "Food Processing & Manufacturing",
+  "Restaurants & Food Services",
+  "Retail & E-commerce",
+  "Healthcare & Wellness",
+  "Real Estate & Property",
+  "Legal Services",
+  "Accounting & Finance",
+  "Construction & Trades",
+  "Automotive & Equipment",
+  "Logistics & Transportation",
+  "Renewable Energy",
+  "Tourism & Hospitality",
+  "Education & Childcare",
+  "Beauty & Personal Care",
+  "Non-profit & Community Services",
+  "IT & Technology",
+  "Marketing & Advertising",
+];
+
+export const LOCATIONS = [
+  "Chatham, ON",
+  "Chatham-Kent, ON",
+  "Wallaceburg, ON",
+  "Tilbury, ON",
+  "Ridgetown, ON",
+  "Blenheim, ON",
+  "Dresden, ON",
+  "Wheatley, ON",
+  "Leamington, ON",
+  "Windsor, ON",
+  "Sarnia, ON",
+  "London, ON",
+  "Strathroy, ON",
+  "St. Thomas, ON",
+  "Woodstock, ON",
+  "Lambton County, ON",
+];
+
+export const STATUS_COLORS = {
+  New: "#22d3ee",
+  Contacted: "#f59e0b",
+  Qualified: "#10b981",
+  Closed: "#ef4444",
+};
+
+export const LEAD_STATUSES = ["New", "Contacted", "Qualified", "Closed"];
+
+/* -------------------------------------------------------------------- */
+/* ADJUSTER_PROSPECTS                                                   */
+/* -------------------------------------------------------------------- */
+
+export const ADJUSTER_PROSPECTS = [
+  {
+    id: "adj1",
+    companyName: "Kent & Essex Mutual Insurance",
+    contactName: "Claims Department",
+    title: "Claims Manager",
+    email: "claims@kentessexmutual.ca",
+    phone: "(519) 352-1010",
+    website: "kentessexmutual.ca",
+    industry: "Insurance & Claims Adjusting",
+    location: "Chatham, ON",
+    employees: "25-50",
+    revenue: "$8M CAD",
+    founded: "1901",
+    score: 88,
+    tags: ["Farm Mutual", "Regional", "High Volume"],
+    linkedin: "linkedin.com/company/kent-essex-mutual",
+    twitter: "@KentEssexMutual",
+    instagram: "@kentessexmutual",
+    summary:
+      "Long-standing farm mutual insurer serving Chatham-Kent with a steady claims volume across property and agricultural lines — strong fit for a dependable local restoration/adjuster referral relationship.",
+  },
+  {
+    id: "adj2",
+    companyName: "Maple Mutual Insurance (My Insurance My Way)",
+    contactName: "Claims Department",
+    title: "Claims Supervisor",
+    email: "claims@maplemutual.ca",
+    phone: "(519) 627-4200",
+    website: "myinsurancemyway.ca",
+    industry: "Insurance & Claims Adjusting",
+    location: "Ridgetown, ON",
+    employees: "10-25",
+    revenue: "$4.5M CAD",
+    founded: "1875",
+    score: 79,
+    tags: ["Farm Mutual", "Rural", "Property"],
+    linkedin: "linkedin.com/company/maple-mutual-insurance",
+    twitter: "",
+    instagram: "",
+    summary:
+      "Community-rooted mutual insurer covering rural Chatham-Kent properties; smaller claims volume but consistent referral potential for storm and water damage work.",
+  },
+  {
+    id: "adj3",
+    companyName: "Kernaghan Adjusters",
+    contactName: "Dennis Schembri",
+    title: "VP Ontario Operations",
+    email: "dschembri@kernaghan.com",
+    phone: "(519) 969-4700",
+    website: "kernaghan.com",
+    industry: "Independent Claims Adjusting",
+    location: "Windsor, ON",
+    employees: "50-200",
+    revenue: "$22M CAD",
+    founded: "1919",
+    score: 92,
+    tags: ["Independent Adjuster", "Multi-Branch", "Commercial"],
+    linkedin: "linkedin.com/in/dennis-schembri-kernaghan",
+    twitter: "@KernaghanAdj",
+    instagram: "",
+    summary:
+      "National independent adjusting firm with strong Windsor-Essex presence and a high volume of commercial and residential claims requiring restoration contractor referrals.",
+  },
+  {
+    id: "adj4",
+    companyName: "ClaimsPro – Windsor/Sarnia",
+    contactName: "Branch Manager",
+    title: "Office Branch Manager",
+    email: "windsor.branch@sccinc.ca",
+    phone: "(519) 254-7100",
+    website: "claimspro.ca",
+    industry: "Independent Claims Adjusting",
+    location: "Windsor, ON",
+    employees: "25-50",
+    revenue: "$11M CAD",
+    founded: "1992",
+    score: 85,
+    tags: ["Independent Adjuster", "Auto & Property", "Two Branches"],
+    linkedin: "linkedin.com/company/claimspro",
+    twitter: "",
+    instagram: "",
+    summary:
+      "Large national adjusting network with dual Windsor and Sarnia branches — high claim throughput makes it a priority relationship for referral pipeline consistency.",
+  },
+  {
+    id: "adj5",
+    companyName: "Salus Mutual Insurance",
+    contactName: "Claims Department",
+    title: "Claims Team Lead",
+    email: "claims@salusmutual.ca",
+    phone: "(519) 245-2620",
+    website: "salusmutual.ca",
+    industry: "Insurance & Claims Adjusting",
+    location: "Dresden, ON",
+    employees: "10-25",
+    revenue: "$5M CAD",
+    founded: "1888",
+    score: 74,
+    tags: ["Farm Mutual", "Rural", "Property"],
+    linkedin: "",
+    twitter: "",
+    instagram: "",
+    summary:
+      "Small farm mutual serving Chatham-Kent's rural municipalities; lower volume but low-competition territory for building an early referral relationship.",
+  },
+  {
+    id: "adj6",
+    companyName: "BrokerLink Chatham",
+    contactName: "Branch Manager",
+    title: "Commercial Lines Manager",
+    email: "chatham@brokerlink.ca",
+    phone: "(519) 352-5300",
+    website: "brokerlink.ca",
+    industry: "Insurance Brokerage",
+    location: "Chatham, ON",
+    employees: "10-25",
+    revenue: "$6M CAD",
+    founded: "1970",
+    score: 81,
+    tags: ["Brokerage", "Commercial Lines", "Multi-Insurer"],
+    linkedin: "linkedin.com/company/brokerlink",
+    twitter: "@BrokerLink",
+    instagram: "",
+    summary:
+      "Local BrokerLink office placing commercial and residential policies across multiple insurers — a broker relationship can generate referrals across several carriers at once.",
+  },
+];
+
+/* -------------------------------------------------------------------- */
+/* RESTORATION_PROSPECTS                                                */
+/* -------------------------------------------------------------------- */
+// Note: original source skips from res6 to res8 — the id gap (no res7)
+// is preserved intentionally rather than renumbered, in case res7 exists
+// elsewhere in your data and should be reinstated later.
+
+export const RESTORATION_PROSPECTS = [
+  {
+    id: "res1",
+    companyName: "First Onsite – Chatham/Kent",
+    contactName: "Branch Manager",
+    title: "Restoration Branch Manager",
+    email: "chatham@firstonsite.ca",
+    phone: "(519) 351-1300",
+    website: "firstonsite.ca",
+    industry: "Restoration & Remediation",
+    location: "Chatham, ON",
+    employees: "25-50",
+    revenue: "$9M CAD",
+    founded: "1988",
+    score: 90,
+    tags: ["National Brand", "24/7 Emergency", "Water & Fire"],
+    linkedin: "linkedin.com/company/first-onsite",
+    twitter: "@FirstOnsite",
+    instagram: "@firstonsite",
+    summary:
+      "National restoration brand with a dedicated Chatham-Kent branch handling water, fire, and mold remediation — high-volume, insurer-facing operation and a strong adjuster-referral fit.",
+  },
+  {
+    id: "res2",
+    companyName: "ServiceMaster Clean – Chatham, Windsor & Sarnia",
+    contactName: "Owner",
+    title: "Owner / Operator",
+    email: "info@servicemasterck.ca",
+    phone: "(519) 436-5900",
+    website: "servicemasterclean.com",
+    industry: "Restoration & Remediation",
+    location: "Chatham, ON",
+    employees: "10-25",
+    revenue: "$5.5M CAD",
+    founded: "1995",
+    score: 83,
+    tags: ["Multi-Location", "Fire & Water", "Commercial Cleaning"],
+    linkedin: "linkedin.com/company/servicemaster-clean",
+    twitter: "",
+    instagram: "@servicemasterclean",
+    summary:
+      "Owner-operated franchise spanning three southwestern Ontario markets, combining restoration with commercial cleaning contracts — broad service line for cross-referral opportunities.",
+  },
+  {
+    id: "res3",
+    companyName: "ServiceMaster Restore – Windsor",
+    contactName: "Operations Manager",
+    title: "Operations Manager",
+    email: "ops@servicemasterwindsor.ca",
+    phone: "(519) 966-7200",
+    website: "servicemasterrestore.com",
+    industry: "Restoration & Remediation",
+    location: "Windsor, ON",
+    employees: "25-50",
+    revenue: "$8M CAD",
+    founded: "2001",
+    score: 87,
+    tags: ["24/7 Emergency", "Storm Response", "Commercial"],
+    linkedin: "linkedin.com/company/servicemaster-restore",
+    twitter: "",
+    instagram: "",
+    summary:
+      "Windsor-based restoration operation with dedicated storm response capacity — active insurer relationships already in place, making them a fast-moving lead.",
+  },
+  {
+    id: "res4",
+    companyName: "Supreme Restoration Services",
+    contactName: "Steve (Owner)",
+    title: "Owner",
+    email: "steve@supremerestoration.ca",
+    phone: "(226) 984-1122",
+    website: "supremerestoration.ca",
+    industry: "Restoration & Remediation",
+    location: "Sarnia, ON",
+    employees: "1-10",
+    revenue: "$1.8M CAD",
+    founded: "2016",
+    score: 71,
+    tags: ["Owner-Operated", "Growing", "Water Damage"],
+    linkedin: "",
+    twitter: "",
+    instagram: "@supremerestorationservices",
+    summary:
+      "Small, growing owner-operated restoration shop in Sarnia-Lambton — earlier-stage relationship but motivated to build referral volume.",
+  },
+  {
+    id: "res5",
+    companyName: "First Onsite – Windsor",
+    contactName: "Branch Manager",
+    title: "Regional Branch Manager",
+    email: "windsor@firstonsite.ca",
+    phone: "(519) 972-0400",
+    website: "firstonsite.ca",
+    industry: "Restoration & Remediation",
+    location: "Windsor, ON",
+    employees: "50-200",
+    revenue: "$14M CAD",
+    founded: "1988",
+    score: 91,
+    tags: ["National Brand", "24/7 Emergency", "Large Loss"],
+    linkedin: "linkedin.com/company/first-onsite",
+    twitter: "@FirstOnsite",
+    instagram: "@firstonsite",
+    summary:
+      "Windsor regional branch of the same national First Onsite network — larger loss capacity and dedicated commercial claims team.",
+  },
+  {
+    id: "res6",
+    companyName: "WINMAR – Chatham",
+    contactName: "Dale Fortier",
+    title: "Owner",
+    email: "dale.fortier@winmar.ca",
+    phone: "(519) 354-9600",
+    website: "winmar.ca",
+    industry: "Restoration & Remediation",
+    location: "Chatham, ON",
+    employees: "10-25",
+    revenue: "$4.2M CAD",
+    founded: "2003",
+    score: 84,
+    tags: ["Franchise", "Local Owner", "Fire & Water"],
+    linkedin: "linkedin.com/in/dale-fortier-winmar",
+    twitter: "",
+    instagram: "",
+    summary:
+      "Locally owned WINMAR franchise with an established name in Chatham-Kent restoration — the named owner contact is a strong direct-outreach opportunity.",
+  },
+  {
+    id: "res8",
+    companyName: "BELFOR Property Restoration – SW Ontario",
+    contactName: "Regional Director",
+    title: "Regional Director",
+    email: "swontario@belfor.com",
+    phone: "(519) 969-8100",
+    website: "belfor.com",
+    industry: "Restoration & Remediation",
+    location: "Windsor, ON",
+    employees: "200+",
+    revenue: "$45M CAD",
+    founded: "1946",
+    score: 94,
+    tags: ["Global Brand", "Large Loss", "Enterprise"],
+    linkedin: "linkedin.com/company/belfor",
+    twitter: "@BELFORUS",
+    instagram: "@belfor",
+    summary:
+      "Global restoration enterprise with a regional Southwestern Ontario operation — top-scoring prospect given scale, but expect a longer, more formal sales cycle.",
+  },
+];
+
+export const CLIENTS = {
+  adjuster: {
+    label: "Insurance Adjusters",
+    icon: "🗂️",
+    color: "#f59e0b",
+    pitch:
+      "Building referral relationships with independent adjusters, mutual insurers, and brokers across Chatham-Kent, Windsor-Essex, and Sarnia-Lambton.",
+    prospects: ADJUSTER_PROSPECTS,
+  },
+  restoration: {
+    label: "Restoration Contractors",
+    icon: "🛠️",
+    color: "#22d3ee",
+    pitch:
+      "Connecting with restoration and remediation contractors who need reliable adjuster referrals after water, fire, and storm damage claims.",
+    prospects: RESTORATION_PROSPECTS,
+  },
+};
