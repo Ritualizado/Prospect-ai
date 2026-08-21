@@ -2,9 +2,12 @@
  * components/Navbar.jsx
  * -----------------------------------------------------------------------
  * App header: brand mark + primary tab navigation. The Leads tab shows
- * a live count badge of saved leads.
+ * a live count badge of saved leads. Lives in shared components/
+ * (rather than a feature folder) because it isn't owned by any one
+ * feature — it reads a bit of state from several.
  */
 import React from "react";
+import { useAppStore } from "../store/useAppStore";
 
 const TABS = [
   ["campaigns", "🎯 Campaigns"],
@@ -13,7 +16,11 @@ const TABS = [
   ["history", "🕐 History"],
 ];
 
-export default function Navbar({ tab, setTab, savedLeadsCount }) {
+export default function Navbar() {
+  const tab = useAppStore((s) => s.tab);
+  const setTab = useAppStore((s) => s.setTab);
+  const savedLeadsCount = useAppStore((s) => s.savedLeads.length);
+
   return (
     <div style={{ background: "#0d1117", borderBottom: "1px solid #1f2937", padding: "0 24px" }}>
       <div

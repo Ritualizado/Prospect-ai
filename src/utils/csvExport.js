@@ -4,7 +4,6 @@
  * Client-side CSV export for a list of prospects. Triggers a browser
  * download via an object URL — no server round-trip required.
  */
-
 const CSV_HEADERS = [
   "Company",
   "Contact",
