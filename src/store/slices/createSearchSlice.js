@@ -13,7 +13,7 @@ export const createSearchSlice = (set, get) => ({
   location: "",
   companySize: "any",
   searchResults: [],
-  searchLoading: false,
+  isSearching: false,
   searchError: "",
   searchHistory: [],
 
@@ -25,7 +25,7 @@ export const createSearchSlice = (set, get) => ({
     const { industry, location, companySize } = get();
     if (!industry || !location) return;
 
-    set({ searchLoading: true, searchError: "", searchResults: [] });
+    set({ isSearching: true, searchError: "", searchResults: [] });
     try {
       const results = await searchProspects({ industry, location, companySize });
       set((state) => ({
@@ -45,7 +45,7 @@ export const createSearchSlice = (set, get) => ({
       set({ searchError: err.message || "Search failed. Please try again." });
       console.error(err);
     } finally {
-      set({ searchLoading: false });
+      set({ isSearching: false });
     }
   },
 

@@ -31,7 +31,7 @@ export default function SearchTab() {
   const companySize = useAppStore((s) => s.companySize);
   const setCompanySize = useAppStore((s) => s.setCompanySize);
   const searchResults = useAppStore((s) => s.searchResults);
-  const loading = useAppStore((s) => s.searchLoading);
+  const loading = useAppStore((s) => s.isSearching);
   const searchError = useAppStore((s) => s.searchError);
   const runSearch = useAppStore((s) => s.runSearch);
 
@@ -48,10 +48,10 @@ export default function SearchTab() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr auto", gap: 12, alignItems: "end" }}>
           <div>
             <label style={{ display: "block", fontSize: 11, color: "#64748b", marginBottom: 6, fontWeight: 600 }}>
-              Industry
+              Priority Sector
             </label>
             <select className="inp" value={industry} onChange={(e) => setIndustry(e.target.value)}>
-              <option value="">Select industry...</option>
+              <option value="">Select sector...</option>
               {INDUSTRIES.map((i) => (
                 <option key={i}>{i}</option>
               ))}

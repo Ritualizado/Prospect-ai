@@ -18,7 +18,8 @@ out itself in comments:
 
 This version fixes both:
 
-- **Real leads.** `services/prospectService.js` calls Google Places (via
+- **Real leads.** `services/prospectService.js` calls Serper.dev's Places
+  search (via
   the backend) to find real businesses for the chosen industry + location,
   then sends that real data to Claude to score, tag, and summarize — Claude
   enriches, it doesn't invent. Company name, address, phone, and website
@@ -26,18 +27,18 @@ This version fixes both:
   estimated firmographics (employee/revenue range, since Places doesn't
   expose those) are AI-derived, and are labeled as estimates.
 - **No key in the browser.** A small Express backend (`server/`) holds
-  both `ANTHROPIC_API_KEY` and `GOOGLE_PLACES_API_KEY` server-side and
+  both `ANTHROPIC_API_KEY` and `SERPER_API_KEY` server-side and
   proxies the two external calls the client needs
-  (`POST /api/claude/messages`, `GET /api/places/search`,
-  `GET /api/places/details`). The client never talks to Anthropic or
-  Google directly.
+  (`POST /api/claude/messages`, `POST /api/claude/enrich-prospects`,
+  `POST /api/claude/outreach`, `GET /api/places/search`). The client
+  never talks to Anthropic or Serper directly.
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env
-# edit .env: add ANTHROPIC_API_KEY and GOOGLE_PLACES_API_KEY
+# edit .env: add ANTHROPIC_API_KEY and SERPER_API_KEY
 npm run dev
 ```
 
@@ -48,9 +49,9 @@ npm run dev
 ### Getting API keys
 
 - **Anthropic**: https://console.anthropic.com/settings/keys
-- **Google Places**: enable the "Places API" in
-  https://console.cloud.google.com/apis/credentials, create an API key,
-  and restrict it (by IP for a server key) before shipping publicly.
+- **Serper.dev**: sign up at https://serper.dev and grab an API key
+  from https://serper.dev/api-key — it wraps Google's local/places
+  results behind a simple REST API, no Google Cloud project needed.
 
 ### Production
 
@@ -71,9 +72,10 @@ parsing, so porting them is mechanical.
 server/                       # Backend — the only thing holding API keys
 ├── index.js                  # Express app: health check, static client, error handling
 └── routes/
-    ├── claude.js              # POST /api/claude/messages  → Anthropic Messages API
-    └── places.js              # GET  /api/places/search    → Google Places Text Search
-                                # GET  /api/places/details   → Google Places Details
+    ├── claude.js               # POST /api/claude/messages         → Anthropic Messages API
+    │                           # POST /api/claude/enrich-prospects → Claude enrichment/scoring
+    │                           # POST /api/claude/outreach         → Claude outreach drafting
+    └── places.js               # GET  /api/places/search           → Serper.dev Places search
 
 src/
 ├── services/                 # All external-API-shaped logic. Components never fetch.
@@ -94,9 +96,8 @@ src/
 │
 ├── features/                 # One folder per user-facing area
 │   ├── campaigns/
-│   │   ├── CampaignsTab.jsx
-│   │   ├── CampaignReportModal.jsx
-│   │   └── data/clients.js     # ⚠️ demo seed data — see below
+│   │   ├── CampaignsTab.jsx        # live, per-sector dashboard over saved leads
+│   │   └── CampaignReportModal.jsx
 │   ├── search/SearchTab.jsx
 │   ├── leads/
 │   │   ├── LeadsTab.jsx
@@ -106,7 +107,7 @@ src/
 │   └── history/HistoryTab.jsx
 │
 ├── components/Navbar.jsx     # only truly cross-feature UI component
-├── constants/                # INDUSTRIES, LOCATIONS, STATUS_COLORS, LEAD_STATUSES
+├── constants/                # sectors.js (data dictionary), INDUSTRIES, LOCATIONS, STATUS_COLORS, LEAD_STATUSES
 ├── utils/csvExport.js
 ├── styles/index.css
 └── app/App.jsx                # tab routing + modal composition, no local state
@@ -129,17 +130,20 @@ report is printed it's logged there, ready for a future "Reports" view
 that shows trends over time instead of only the always-live report in
 `CampaignReportModal`.
 
-### Demo seed data
+### Priority sectors & live campaigns
 
-`features/campaigns/data/clients.js` (the pre-loaded "Insurance Adjusters"
-and "Restoration Contractors" lists) is static example data, not sourced
-from Google Places. Company/contact names and titles are preserved
-verbatim from the original source; contact details, revenue, founding
-years, and social handles are illustrative placeholders in the app's own
-519/226-area-code, `.ca`-domain, CAD-revenue style — every object is
-flagged `isMockData: true`. Replace this file with your real prospect
-data before using the Campaigns tab for real outreach, or wire it up to
-`prospectService` the same way the Search tab is.
+`constants/sectors.js` is the canonical data dictionary: 17 priority
+sectors (restoration companies ranked highest, transportation &
+infrastructure lowest), each with its priority rank, the decision-maker
+titles Claude should look for, and display metadata. `INDUSTRIES` (the
+Search-tab dropdown list) is derived from it, so the two never drift.
+
+The Campaigns tab is no longer pre-loaded mock data — it's a live
+dashboard per sector, built entirely from whatever you've actually
+searched and saved: counts, average score, and the prospect grid/report
+are all filtered from the leads slice by `lead.industry`. There's nothing
+to "replace before shipping" here anymore; run a search, save a few
+leads, and the sector's stats populate.
 
 ### Behavioral notes preserved from the prior pass
 

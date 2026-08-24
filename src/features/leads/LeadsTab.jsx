@@ -9,6 +9,7 @@ import React from "react";
 import { exportCSV } from "../../utils/csvExport";
 import { STATUS_COLORS, LEAD_STATUSES } from "../../constants";
 import { useAppStore } from "../../store/useAppStore";
+import { PriorityBadge } from "./ProspectCard";
 
 export default function LeadsTab() {
   const savedLeads = useAppStore((s) => s.savedLeads);
@@ -97,7 +98,10 @@ export default function LeadsTab() {
                     {lead.companyName?.[0]}
                   </div>
                   <div>
-                    <h3 style={{ fontWeight: 600, fontSize: 15 }}>{lead.companyName}</h3>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <h3 style={{ fontWeight: 600, fontSize: 15 }}>{lead.companyName}</h3>
+                      {Number.isFinite(lead.priorityRank) && <PriorityBadge rank={lead.priorityRank} />}
+                    </div>
                     <p style={{ color: "#64748b", fontSize: 12 }}>
                       {lead.contactName} · {lead.title}
                     </p>

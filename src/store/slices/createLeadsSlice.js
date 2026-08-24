@@ -54,4 +54,11 @@ export const createLeadsSlice = (set, get) => ({
     const { savedLeads, leadStatuses, statusFilter } = get();
     return savedLeads.filter((l) => statusFilter === "All" || leadStatuses[l.id] === statusFilter);
   },
+
+  // Used by CampaignsTab to aggregate real, live-fetched leads per
+  // priority sector instead of reading from a static mock list.
+  getLeadsBySector: (sectorName) => {
+    const { savedLeads } = get();
+    return savedLeads.filter((l) => l.industry === sectorName);
+  },
 });

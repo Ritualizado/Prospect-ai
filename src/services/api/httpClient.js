@@ -2,7 +2,7 @@
  * services/api/httpClient.js
  * -----------------------------------------------------------------------
  * Single shared fetch wrapper for talking to our own backend (server/).
- * Every external API call (Anthropic, Google Places) is proxied through
+ * Every external API call (Anthropic, Serper.dev Places) is proxied through
  * this backend, so this is the ONLY place in the client that makes
  * network requests — no component or feature file calls `fetch` on a
  * third-party host directly. Base URL defaults to "/api", which works

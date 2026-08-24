@@ -1,11 +1,12 @@
 /**
  * features/campaigns/CampaignReportModal.jsx
  * -----------------------------------------------------------------------
- * Generates a print-friendly campaign summary for the active client
- * list: headline stats, top-3 prospects by score, a full prospect
- * table, and any notes attached to prospects. The "Print / Save PDF"
- * button opens a new window with the same markup wrapped in standalone
- * print CSS.
+ * Generates a print-friendly campaign summary for a priority sector,
+ * built from real saved leads (leads slice, filtered by
+ * `lead.industry`) rather than a static mock prospect list: headline
+ * stats, top-3 prospects by score, a full prospect table, and any notes
+ * attached to prospects. The "Print / Save PDF" button opens a new
+ * window with the same markup wrapped in standalone print CSS.
  *
  * NOTE: scoreColor here uses ≥85 / ≥75 thresholds, while
  * features/leads/ProspectCard.jsx uses ≥80 / ≥60. Both are kept as
@@ -15,7 +16,7 @@
 import React from "react";
 import { exportCSV } from "../../utils/csvExport";
 import { STATUS_COLORS } from "../../constants";
-import { CLIENTS } from "./data/clients";
+import { getSectorByName, SECTORS } from "../../constants/sectors";
 import { useAppStore } from "../../store/useAppStore";
 
 function scoreColor(s) {
@@ -54,19 +55,21 @@ export default function CampaignReportModal() {
   const notes = useAppStore((s) => s.notes);
   const closeCampaignReport = useAppStore((s) => s.closeCampaignReport);
   const saveReportSnapshot = useAppStore((s) => s.saveReportSnapshot);
+  const prospects = useAppStore((s) => s.getLeadsBySector(clientKey));
 
   if (!showReport) return null;
 
-  const client = CLIENTS[clientKey];
-  const prospects = client.prospects;
+  const sector = getSectorByName(clientKey) || SECTORS[0];
   const date = new Date().toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
-  const avgScore = Math.round(prospects.reduce((a, p) => a + p.score, 0) / prospects.length);
+  const avgScore = prospects.length
+    ? Math.round(prospects.reduce((a, p) => a + (p.score || 0), 0) / prospects.length)
+    : 0;
   const statusCounts = prospects.reduce((acc, p) => {
     const s = leadStatuses[p.id] || "New";
     acc[s] = (acc[s] || 0) + 1;
     return acc;
   }, {});
-  const topProspects = [...prospects].sort((a, b) => b.score - a.score).slice(0, 3);
+  const topProspects = [...prospects].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 3);
 
   const handlePrint = () => {
     const el = document.getElementById("report-content");
@@ -79,9 +82,7 @@ export default function CampaignReportModal() {
     setTimeout(() => {
       w.print();
     }, 400);
-    // Log a lightweight snapshot so future reporting views (e.g. a
-    // "Reports" tab showing trends over time) have history to render.
-    saveReportSnapshot(clientKey, { generatedAt: new Date().toISOString(), avgScore, statusCounts });
+    saveReportSnapshot(clientKey, { generatedAt: new Date().toISOString(), avgScore, statusCounts, leadCount: prospects.length });
   };
 
   return (
@@ -101,14 +102,14 @@ export default function CampaignReportModal() {
               Campaign Report
             </h2>
             <p style={{ color: "#64748b", fontSize: 13 }}>
-              {client.icon} {client.label} · {date}
+              {sector.icon} {sector.name} · {date}
             </p>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <button
               className="btn btn-s"
               style={{ fontSize: 12 }}
-              onClick={() => exportCSV(prospects, `${clientKey}-campaign-report.csv`)}
+              onClick={() => exportCSV(prospects, `${clientKey.toLowerCase().replace(/\s+/g, "-")}-campaign-report.csv`)}
             >
               ⬇ Export CSV
             </button>
@@ -134,185 +135,198 @@ export default function CampaignReportModal() {
 
         <div style={{ padding: 24, overflowY: "auto", maxHeight: "75vh" }}>
           <div id="report-content">
-            {/* Report Header */}
-            <div className="header" style={{ background: "#0f172a", borderRadius: 10, padding: "24px 28px", marginBottom: 24 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div>
-                  <p style={{ color: "#6366f1", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                    Campaign Report
-                  </p>
-                  <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 22, color: "#fff" }}>
-                    {client.label}
-                  </h1>
-                  <p style={{ color: "#94a3b8", fontSize: 13 }}>{client.pitch}</p>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <p style={{ color: "#64748b", fontSize: 12 }}>Generated</p>
-                  <p style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600 }}>{date}</p>
-                </div>
+            {prospects.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>{sector.icon}</div>
+                <p style={{ color: "#64748b", fontSize: 14 }}>
+                  No saved leads in {sector.name} yet — search this sector and save a few prospects first.
+                </p>
               </div>
-            </div>
-
-            {/* Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 24 }}>
-              {[
-                { num: prospects.length, label: "Total Prospects" },
-                { num: avgScore, label: "Avg Lead Score" },
-                { num: statusCounts["Qualified"] || 0, label: "Qualified" },
-                { num: statusCounts["Contacted"] || 0, label: "Contacted" },
-              ].map((s) => (
-                <div key={s.label} style={{ background: "#0d1117", border: "1px solid #1f2937", borderRadius: 8, padding: 14, textAlign: "center" }}>
-                  <p style={{ fontSize: 28, fontWeight: 700, color: client.color, fontFamily: "'Space Grotesk',sans-serif" }}>
-                    {s.num}
-                  </p>
-                  <p style={{ fontSize: 11, color: "#64748b", marginTop: 4, textTransform: "uppercase" }}>{s.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Top Prospects */}
-            <div style={{ marginBottom: 24 }}>
-              <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
-                🏆 Top Prospects by Score
-              </h2>
-              {topProspects.map((p, i) => (
-                <div
-                  key={p.id}
-                  style={{
-                    background: "#0d1117",
-                    border: `1px solid ${i === 0 ? client.color : "#1f2937"}`,
-                    borderRadius: 8,
-                    padding: 14,
-                    marginBottom: 10,
-                  }}
-                >
+            ) : (
+              <>
+                {/* Report Header */}
+                <div className="header" style={{ background: "#0f172a", borderRadius: 10, padding: "24px 28px", marginBottom: 24 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>#{i + 1}</span>
-                        <h3 style={{ fontWeight: 700, fontSize: 15, color: "#e2e8f0" }}>{p.companyName}</h3>
-                        {i === 0 && (
-                          <span
-                            style={{
-                              background: client.color + "22",
-                              color: client.color,
-                              fontSize: 10,
-                              fontWeight: 700,
-                              padding: "2px 8px",
-                              borderRadius: 4,
-                              textTransform: "uppercase",
-                            }}
-                          >
-                            Top Lead
-                          </span>
-                        )}
-                      </div>
-                      <p style={{ color: "#64748b", fontSize: 12 }}>
-                        {p.contactName} · {p.title}
+                      <p style={{ color: "#6366f1", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Campaign Report · Priority {sector.priorityRank} of {SECTORS.length}
+                      </p>
+                      <h1 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 22, color: "#fff" }}>
+                        {sector.name}
+                      </h1>
+                      <p style={{ color: "#94a3b8", fontSize: 13 }}>
+                        Target roles: {sector.decisionMakerTitles.join(", ")}
                       </p>
                     </div>
-                    <div
-                      style={{
-                        background: scoreColor(p.score) + "22",
-                        color: scoreColor(p.score),
-                        borderRadius: 6,
-                        padding: "4px 10px",
-                        fontWeight: 700,
-                        fontSize: 13,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {p.score}
+                    <div style={{ textAlign: "right" }}>
+                      <p style={{ color: "#64748b", fontSize: 12 }}>Generated</p>
+                      <p style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600 }}>{date}</p>
                     </div>
-                  </div>
-                  <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.6, marginBottom: 8, marginTop: 8 }}>{p.summary}</p>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, color: "#64748b" }}>✉ {p.email}</span>
-                    <span style={{ fontSize: 12, color: "#64748b", marginLeft: 12 }}>☎ {p.phone}</span>
-                    <span style={{ fontSize: 12, color: "#64748b", marginLeft: 12 }}>👥 {p.employees}</span>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Full Prospect Table */}
-            <div style={{ marginBottom: 16 }}>
-              <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
-                📋 All Prospects
-              </h2>
-              <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #1f2937" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ background: "#0d1117" }}>
-                      {["Company", "Contact", "Location", "Email", "Phone", "Revenue", "Score", "Status", "Tags"].map((h) => (
-                        <th key={h} style={{ padding: "10px 12px", textAlign: "left", color: "#64748b" }}>
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {prospects.map((p, i) => (
-                      <tr key={p.id} style={{ background: i % 2 === 0 ? "#0a0a0f" : "#0d1117" }}>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", fontWeight: 600, color: "#e2e8f0" }}>
-                          {p.companyName}
-                        </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.contactName}</td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.location}</td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.email}</td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.phone}</td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.revenue}</td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937" }}>
-                          <span style={{ background: scoreColor(p.score) + "22", color: scoreColor(p.score), padding: "2px 8px", borderRadius: 4, fontWeight: 700 }}>
-                            {p.score}
-                          </span>
-                        </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937" }}>
-                          <span
-                            style={{
-                              background: (STATUS_COLORS[leadStatuses[p.id]] || STATUS_COLORS.New) + "22",
-                              color: STATUS_COLORS[leadStatuses[p.id]] || STATUS_COLORS.New,
-                              padding: "2px 8px",
-                              borderRadius: 4,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {leadStatuses[p.id] || "New"}
-                          </span>
-                        </td>
-                        <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937" }}>
-                          {p.tags?.map((t) => (
-                            <span key={t} style={{ display: "inline-block", background: "#1e293b", padding: "2px 6px", borderRadius: 3, fontSize: 11, marginRight: 4 }}>
-                              {t}
-                            </span>
-                          ))}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Notes section */}
-            {prospects.some((p) => notes[p.id]?.length > 0) && (
-              <div>
-                <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
-                  📝 Notes
-                </h2>
-                {prospects
-                  .filter((p) => notes[p.id]?.length > 0)
-                  .map((p) => (
-                    <div key={p.id} style={{ background: "#0d1117", border: "1px solid #1f2937", borderRadius: 8, padding: 14, marginBottom: 10 }}>
-                      <p style={{ fontWeight: 600, color: "#e2e8f0", fontSize: 13, marginBottom: 8 }}>{p.companyName}</p>
-                      {notes[p.id].map((n, i) => (
-                        <p key={i} style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>
-                          <span style={{ color: "#475569" }}>{n.time}:</span> {n.text}
-                        </p>
-                      ))}
+                {/* Stats */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 24 }}>
+                  {[
+                    { num: prospects.length, label: "Total Prospects" },
+                    { num: avgScore, label: "Avg Lead Score" },
+                    { num: statusCounts["Qualified"] || 0, label: "Qualified" },
+                    { num: statusCounts["Contacted"] || 0, label: "Contacted" },
+                  ].map((s) => (
+                    <div key={s.label} style={{ background: "#0d1117", border: "1px solid #1f2937", borderRadius: 8, padding: 14, textAlign: "center" }}>
+                      <p style={{ fontSize: 28, fontWeight: 700, color: sector.color, fontFamily: "'Space Grotesk',sans-serif" }}>
+                        {s.num}
+                      </p>
+                      <p style={{ fontSize: 11, color: "#64748b", marginTop: 4, textTransform: "uppercase" }}>{s.label}</p>
                     </div>
                   ))}
-              </div>
+                </div>
+
+                {/* Top Prospects */}
+                <div style={{ marginBottom: 24 }}>
+                  <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
+                    🏆 Top Prospects by Score
+                  </h2>
+                  {topProspects.map((p, i) => (
+                    <div
+                      key={p.id}
+                      style={{
+                        background: "#0d1117",
+                        border: `1px solid ${i === 0 ? sector.color : "#1f2937"}`,
+                        borderRadius: 8,
+                        padding: 14,
+                        marginBottom: 10,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                            <span style={{ fontSize: 13, color: "#64748b", fontWeight: 700 }}>#{i + 1}</span>
+                            <h3 style={{ fontWeight: 700, fontSize: 15, color: "#e2e8f0" }}>{p.companyName}</h3>
+                            {i === 0 && (
+                              <span
+                                style={{
+                                  background: sector.color + "22",
+                                  color: sector.color,
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  padding: "2px 8px",
+                                  borderRadius: 4,
+                                  textTransform: "uppercase",
+                                }}
+                              >
+                                Top Lead
+                              </span>
+                            )}
+                          </div>
+                          <p style={{ color: "#64748b", fontSize: 12 }}>
+                            {p.contactName} · {p.title}
+                          </p>
+                        </div>
+                        <div
+                          style={{
+                            background: scoreColor(p.score) + "22",
+                            color: scoreColor(p.score),
+                            borderRadius: 6,
+                            padding: "4px 10px",
+                            fontWeight: 700,
+                            fontSize: 13,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {p.score}
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.6, marginBottom: 8, marginTop: 8 }}>{p.summary}</p>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, color: "#64748b" }}>✉ {p.email || "Not publicly listed"}</span>
+                        <span style={{ fontSize: 12, color: "#64748b", marginLeft: 12 }}>☎ {p.phone}</span>
+                        <span style={{ fontSize: 12, color: "#64748b", marginLeft: 12 }}>👥 {p.employees}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Full Prospect Table */}
+                <div style={{ marginBottom: 16 }}>
+                  <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
+                    📋 All Prospects
+                  </h2>
+                  <div style={{ overflowX: "auto", borderRadius: 10, border: "1px solid #1f2937" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: "#0d1117" }}>
+                          {["Company", "Contact", "Location", "Email", "Phone", "Revenue", "Score", "Status", "Tags"].map((h) => (
+                            <th key={h} style={{ padding: "10px 12px", textAlign: "left", color: "#64748b" }}>
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {prospects.map((p, i) => (
+                          <tr key={p.id} style={{ background: i % 2 === 0 ? "#0a0a0f" : "#0d1117" }}>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", fontWeight: 600, color: "#e2e8f0" }}>
+                              {p.companyName}
+                            </td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.contactName}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.location}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.email || "—"}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.phone}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937", color: "#94a3b8" }}>{p.revenue}</td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937" }}>
+                              <span style={{ background: scoreColor(p.score) + "22", color: scoreColor(p.score), padding: "2px 8px", borderRadius: 4, fontWeight: 700 }}>
+                                {p.score}
+                              </span>
+                            </td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937" }}>
+                              <span
+                                style={{
+                                  background: (STATUS_COLORS[leadStatuses[p.id]] || STATUS_COLORS.New) + "22",
+                                  color: STATUS_COLORS[leadStatuses[p.id]] || STATUS_COLORS.New,
+                                  padding: "2px 8px",
+                                  borderRadius: 4,
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {leadStatuses[p.id] || "New"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "10px 12px", borderBottom: "1px solid #1f2937" }}>
+                              {p.tags?.map((t) => (
+                                <span key={t} style={{ display: "inline-block", background: "#1e293b", padding: "2px 6px", borderRadius: 3, fontSize: 11, marginRight: 4 }}>
+                                  {t}
+                                </span>
+                              ))}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Notes section */}
+                {prospects.some((p) => notes[p.id]?.length > 0) && (
+                  <div>
+                    <h2 style={{ fontFamily: "'Space Grotesk',sans-serif", fontWeight: 700, fontSize: 16, marginBottom: 12 }}>
+                      📝 Notes
+                    </h2>
+                    {prospects
+                      .filter((p) => notes[p.id]?.length > 0)
+                      .map((p) => (
+                        <div key={p.id} style={{ background: "#0d1117", border: "1px solid #1f2937", borderRadius: 8, padding: 14, marginBottom: 10 }}>
+                          <p style={{ fontWeight: 600, color: "#e2e8f0", fontSize: 13, marginBottom: 8 }}>{p.companyName}</p>
+                          {notes[p.id].map((n, i) => (
+                            <p key={i} style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>
+                              <span style={{ color: "#475569" }}>{n.time}:</span> {n.text}
+                            </p>
+                          ))}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

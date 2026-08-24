@@ -7,9 +7,31 @@
  */
 import React from "react";
 import { useAppStore } from "../../store/useAppStore";
+import { priorityTier } from "../../constants/sectors";
 
 export function scoreColor(s) {
   return s >= 80 ? "#10b981" : s >= 60 ? "#f59e0b" : "#ef4444";
+}
+
+/** Small badge reflecting the prospect's sector priority rank (1 = highest). */
+export function PriorityBadge({ rank }) {
+  const tier = priorityTier(rank);
+  return (
+    <span
+      style={{
+        background: tier.color + "20",
+        color: tier.color,
+        borderRadius: 4,
+        padding: "2px 6px",
+        fontSize: 10,
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+      title={tier.label}
+    >
+      #{rank} {tier.label}
+    </span>
+  );
 }
 
 export default function ProspectCard({ prospect, context }) {
@@ -43,18 +65,22 @@ export default function ProspectCard({ prospect, context }) {
             {prospect.contactName} · {prospect.title}
           </p>
         </div>
-        <div
-          style={{
-            background: scoreColor(prospect.score) + "20",
-            color: scoreColor(prospect.score),
-            borderRadius: 6,
-            padding: "3px 8px",
-            fontSize: 12,
-            fontWeight: 700,
-            flexShrink: 0,
-          }}
-        >
-          {prospect.score}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+          <div
+            style={{
+              background: scoreColor(prospect.score) + "20",
+              color: scoreColor(prospect.score),
+              borderRadius: 6,
+              padding: "3px 8px",
+              fontSize: 12,
+              fontWeight: 700,
+            }}
+          >
+            {prospect.score}
+          </div>
+          {Number.isFinite(prospect.priorityRank) && (
+            <PriorityBadge rank={prospect.priorityRank} />
+          )}
         </div>
       </div>
 

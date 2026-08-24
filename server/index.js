@@ -61,9 +61,9 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`ProspectAI API listening on http://localhost:${PORT}`);
   if (!process.env.ANTHROPIC_API_KEY) {
-    console.warn("⚠️  ANTHROPIC_API_KEY is not set — /api/claude requests will fail.");
+    console.warn("  ANTHROPIC_API_KEY is not set — /api/claude requests will fail.");
   }
   if (!process.env.GOOGLE_PLACES_API_KEY) {
-    console.warn("⚠️  GOOGLE_PLACES_API_KEY is not set — /api/places requests will fail.");
+    console.warn("  GOOGLE_PLACES_API_KEY is not set — /api/places requests will fail.");
   }
 });

@@ -1,23 +1,11 @@
-export const INDUSTRIES = [
-  "Demolition & Land Clearing",
-  "Construction & Trades",
-  "Restoration & Remediation",
-  "Insurance & Claims Adjusting",
-  "Agriculture & Farming",
-  "Food Processing & Manufacturing",
-  "Restaurants & Food Services",
-  "Retail & E-commerce",
-  "Healthcare & Wellness",
-  "Real Estate & Property",
-  "Legal Services",
-  "Accounting & Finance",
-  "Automotive & Equipment",
-  "Logistics & Transportation",
-  "Renewable Energy",
-  "Tourism & Hospitality",
-  "Education & Childcare",
-  "Beauty & Personal Care",
-  "Non-profit & Community Services",
-  "IT & Technology",
-  "Marketing & Advertising",
-];
+/**
+ * constants/industries.js
+ * -----------------------------------------------------------------------
+ * Flat, priority-ordered list of industry names for dropdowns and for
+ * the places search query. Derived from constants/sectors.js (the
+ * canonical data dictionary with priority rank + decision-maker
+ * titles) so the two never drift out of sync — update sectors.js only.
+ */
+import { SECTORS } from "./sectors";
+
+export const INDUSTRIES = SECTORS.map((s) => s.name);
