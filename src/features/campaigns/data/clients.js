@@ -1,19 +1,7 @@
 /**
  * features/campaigns/data/clients.js
  * -----------------------------------------------------------------------
- * Pre-loaded example campaign lists (Insurance Adjusters / Restoration
- * Contractors). Unlike Search-tab results (now sourced live from Google
- * Places + Claude, see services/prospectService.js), these are static
- * curated seed lists meant to demo the Campaigns tab out of the box.
  *
- * ⚠️ DEMO DATA — replace with your real prospect data before shipping.
- * Company names, contact names, and titles below are preserved from the
- * original source; contact details (emails/phones/websites/revenue/
- * founding years/social handles) are illustrative placeholders in the
- * same 519/226-area-code, .ca-domain, CAD-revenue style the app's own
- * enrichment prompts generate — they are not real businesses' real data.
- */
-
 /* -------------------------------------------------------------------- */
 /* ADJUSTER_PROSPECTS                                                   */
 /* -------------------------------------------------------------------- */
