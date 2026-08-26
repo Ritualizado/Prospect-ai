@@ -1,14 +1,22 @@
 /**
  * server/routes/claude.js
  * -----------------------------------------------------------------------
- * Anthropic Messages API proxy, with two purpose-built routes on top of
- * a shared low-level helper:
+ * AI enrichment/outreach routes, now backed by Google Gemini
+ * (`@google/genai`) instead of the Anthropic Messages API — same route
+ * paths and same response shapes, so nothing on the frontend needs to
+ * change.
  *
- *   POST /api/claude/enrich-prospects  — takes raw places data
- *     for one sector and returns scored, decision-maker-annotated
- *     Prospect fields. Priority-sector context (rank + expected
- *     decision-maker titles) lives here, server-side, since it's
- *     business logic tied directly to the prompt Claude receives.
+ * NOTE ON IMPORT SYNTAX: this project runs as native ES Modules
+ * (`"type": "module"` in package.json), so `require('@google/genai')`
+ * isn't available here — `require` is a CommonJS-only global and
+ * doesn't exist in an ESM file. The `import { GoogleGenAI } from
+ * "@google/genai"` below is the ESM equivalent and behaves identically.
+ *
+ *   POST /api/claude/enrich-prospects  — takes raw places data for one
+ *     sector and returns scored, decision-maker-annotated Prospect
+ *     fields. Priority-sector context (rank + expected decision-maker
+ *     titles) lives here, server-side, since it's business logic tied
+ *     directly to the prompt Gemini receives.
  *
  *   POST /api/claude/outreach — drafts a personalized cold outreach
  *     email for a single enriched prospect.
@@ -16,57 +24,65 @@
  *   POST /api/claude/messages — generic passthrough, kept for any
  *     future prompt type that doesn't warrant its own route.
  *
+ * The route paths keep their original "/api/claude/*" prefix
+ * deliberately, even though the underlying provider is now Gemini, so
+ * src/services/api/anthropicClient.js doesn't need to change either.
  * The API key never leaves this file.
  */
 import { Router } from "express";
+import { GoogleGenAI } from "@google/genai";
 
 const router = Router();
 
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "gemini-3.6-flash";
 
-async function callAnthropic(prompt, maxTokens = 1000) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+let genAI = null;
+function getClient() {
+  if (genAI) return genAI;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    const err = new Error("Server is missing ANTHROPIC_API_KEY.");
+    const err = new Error("Server is missing GEMINI_API_KEY.");
     err.status = 500;
     throw err;
   }
+  genAI = new GoogleGenAI({ apiKey });
+  return genAI;
+}
 
-  const upstream = await fetch(ANTHROPIC_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
+/**
+ * Low-level Gemini call.
+ * @param {string} promptText
+ * @param {{ maxOutputTokens?: number, json?: boolean }} [options]
+ * @returns {Promise<string>} the model's text response
+ */
+async function callGemini(promptText, { maxOutputTokens = 1000, json = false } = {}) {
+  const ai = getClient();
+
+  let response;
+  try {
+    response = await ai.models.generateContent({
       model: MODEL,
-      max_tokens: Math.min(Number(maxTokens) || 1000, 4096),
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-
-  const data = await upstream.json();
-
-  if (!upstream.ok) {
-    const err = new Error(data?.error?.message || `Anthropic API request failed with status ${upstream.status}`);
-    err.status = upstream.status;
-    throw err;
+      contents: promptText,
+      config: {
+        maxOutputTokens,
+        // Enforces the model return raw JSON (no markdown fences/prose)
+        // when the caller expects a structured payload.
+        ...(json ? { responseMimeType: "application/json" } : {}),
+      },
+    });
+  } catch (err) {
+    const wrapped = new Error(err?.message || "Gemini API request failed.");
+    wrapped.status = err?.status || 502;
+    throw wrapped;
   }
 
-  const text = data?.content?.[0]?.text;
+  const text = response?.text;
   if (!text) {
-    const err = new Error("Anthropic API returned an empty response.");
+    const err = new Error("Gemini API returned an empty response.");
     err.status = 502;
     throw err;
   }
   return text;
-}
-
-function parseJsonArray(raw) {
-  const cleaned = raw.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleaned);
 }
 
 /**
@@ -79,10 +95,10 @@ router.post("/messages", async (req, res) => {
     return res.status(400).json({ error: "Request body must include a string `prompt`." });
   }
   try {
-    const text = await callAnthropic(prompt, maxTokens);
+    const text = await callGemini(prompt, { maxOutputTokens: Math.min(Number(maxTokens) || 1000, 4096) });
     res.json({ text });
   } catch (err) {
-    console.error("Anthropic proxy error:", err);
+    console.error("Gemini proxy error:", err);
     res.status(err.status || 502).json({ error: err.message });
   }
 });
@@ -94,6 +110,13 @@ router.post("/messages", async (req, res) => {
  *         location: string, companySize: string }
  * Returns: { prospects: [...] } — one enriched object per input place,
  * same order, with the raw place fields echoed back untouched.
+ *
+ * Unlike /messages and /outreach, this route calls the SDK directly
+ * (rather than going through callGemini) and wraps generation + text
+ * extraction + markdown cleanup + JSON.parse in a single try/catch, so
+ * any failure at any of those steps is caught, logged in full server-
+ * side, and surfaced to the client with the real error message instead
+ * of a generic failure.
  */
 router.post("/enrich-prospects", async (req, res) => {
   const { places, sector, priorityRank, decisionMakerTitles = [], location, companySize } = req.body || {};
@@ -143,15 +166,43 @@ Return ONLY a JSON array, no markdown, no commentary, one object per business, i
 Leave "email" as an empty string — it is not available from this data source, do not invent one.`;
 
   try {
-    const raw = await callAnthropic(prompt, 2200);
-    const parsed = parseJsonArray(raw);
-    res.json({ prospects: parsed });
-  } catch (err) {
-    console.error("Claude enrich-prospects error:", err);
-    if (err instanceof SyntaxError) {
-      return res.status(502).json({ error: "Claude returned a response that couldn't be parsed as JSON." });
+    const ai = getClient();
+
+    const response = await ai.models.generateContent({
+      model: MODEL,
+      contents: prompt,
+      config: {
+        // Raised from an earlier, tighter cap: gemini-3.6-flash's internal
+        // "thinking" tokens count against maxOutputTokens even in JSON
+        // mode, and enriching up to 8 businesses' worth of fields can get
+        // silently truncated (empty response.text) if this is too low.
+        maxOutputTokens: 4096,
+        responseMimeType: "application/json",
+      },
+    });
+
+    if (!response.text) {
+      const finishReason = response.candidates?.[0]?.finishReason ?? "unknown";
+      throw new Error(
+        `Gemini returned no text (finishReason: ${finishReason}). If this is MAX_TOKENS, raise maxOutputTokens further.`
+      );
     }
-    res.status(err.status || 502).json({ error: err.message });
+
+    const cleanText = response.text
+      .replace(/```json\s*/gi, "")
+      .replace(/```\s*$/gi, "")
+      .trim();
+
+    const prospects = JSON.parse(cleanText);
+
+    if (!Array.isArray(prospects)) {
+      throw new Error("Gemini's JSON response was not an array of prospects.");
+    }
+
+    res.json({ prospects });
+  } catch (error) {
+    console.error("Gemini Error:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -182,10 +233,10 @@ Context: ${prospect.summary}
 Return subject line on first line, then body. Plain text only.`;
 
   try {
-    const text = await callAnthropic(prompt, 1000);
+    const text = await callGemini(prompt, { maxOutputTokens: 1000 });
     res.json({ text });
   } catch (err) {
-    console.error("Claude outreach error:", err);
+    console.error("Gemini outreach error:", err);
     res.status(err.status || 502).json({ error: err.message });
   }
 });

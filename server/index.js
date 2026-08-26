@@ -2,7 +2,7 @@
  * server/index.js
  * -----------------------------------------------------------------------
  * Minimal Express backend that proxies the two external APIs the client
- * needs (Anthropic + Google Places) so their secret keys never reach the
+ * needs (Google Gemini + Serper.dev Places) so their secret keys never reach the
  * browser. This directly resolves the "⚠️ SECURITY NOTE" that was in the
  * original src/services/claudeApi.js: that file called Anthropic straight
  * from the browser with a VITE_-prefixed key, which ships in the client
@@ -60,10 +60,10 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`ProspectAI API listening on http://localhost:${PORT}`);
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.warn("  ANTHROPIC_API_KEY is not set — /api/claude requests will fail.");
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn("⚠️  GEMINI_API_KEY is not set — /api/claude requests will fail.");
   }
-  if (!process.env.GOOGLE_PLACES_API_KEY) {
-    console.warn("  GOOGLE_PLACES_API_KEY is not set — /api/places requests will fail.");
+  if (!process.env.SERPER_API_KEY) {
+    console.warn("⚠️  SERPER_API_KEY is not set — /api/places requests will fail.");
   }
 });

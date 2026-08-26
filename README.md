@@ -27,18 +27,18 @@ This version fixes both:
   estimated firmographics (employee/revenue range, since Places doesn't
   expose those) are AI-derived, and are labeled as estimates.
 - **No key in the browser.** A small Express backend (`server/`) holds
-  both `ANTHROPIC_API_KEY` and `SERPER_API_KEY` server-side and
+  both `GEMINI_API_KEY` and `SERPER_API_KEY` server-side and
   proxies the two external calls the client needs
   (`POST /api/claude/messages`, `POST /api/claude/enrich-prospects`,
   `POST /api/claude/outreach`, `GET /api/places/search`). The client
-  never talks to Anthropic or Serper directly.
+  never talks to Gemini or Serper directly.
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env
-# edit .env: add ANTHROPIC_API_KEY and SERPER_API_KEY
+# edit .env: add GEMINI_API_KEY and SERPER_API_KEY
 npm run dev
 ```
 
@@ -48,7 +48,7 @@ npm run dev
 
 ### Getting API keys
 
-- **Anthropic**: https://console.anthropic.com/settings/keys
+- **Google Gemini** (free tier available): https://aistudio.google.com/apikey
 - **Serper.dev**: sign up at https://serper.dev and grab an API key
   from https://serper.dev/api-key — it wraps Google's local/places
   results behind a simple REST API, no Google Cloud project needed.
@@ -72,7 +72,7 @@ parsing, so porting them is mechanical.
 server/                       # Backend — the only thing holding API keys
 ├── index.js                  # Express app: health check, static client, error handling
 └── routes/
-    ├── claude.js               # POST /api/claude/messages         → Anthropic Messages API
+    ├── claude.js               # POST /api/claude/messages         → Google Gemini (gemini-3.6-flash)
     │                           # POST /api/claude/enrich-prospects → Claude enrichment/scoring
     │                           # POST /api/claude/outreach         → Claude outreach drafting
     └── places.js               # GET  /api/places/search           → Serper.dev Places search
